@@ -284,9 +284,9 @@ _lctx_cert(lua_State* L) {
         luaL_error(L, "need private key");
     }
 
-    int ret = SSL_CTX_use_certificate_file(ctx_p->ctx, certfile, SSL_FILETYPE_PEM);
+    int ret = SSL_CTX_use_certificate_chain_file(ctx_p->ctx, certfile);
     if(ret != 1) {
-        luaL_error(L, "SSL_CTX_use_certificate_file error:%d", ret);
+        luaL_error(L, "SSL_CTX_use_certificate_chain_file error:%d", ret);
     }
 
     ret = SSL_CTX_use_PrivateKey_file(ctx_p->ctx, key, SSL_FILETYPE_PEM);
@@ -317,7 +317,7 @@ _lctx_ciphers(lua_State* L) {
 
 static int
 lnew_ctx(lua_State* L) {
-    struct ssl_ctx* ctx_p = (struct ssl_ctx*)lua_newuserdata(L, sizeof(*ctx_p));
+    struct ssl_ctx* ctx_p = (struct ssl_ctx*)lua_newuserdatauv(L, sizeof(*ctx_p), 0);
     ctx_p->ctx = SSL_CTX_new(SSLv23_method());
     if(!ctx_p->ctx) {
         unsigned int err = ERR_get_error();
@@ -345,12 +345,12 @@ lnew_ctx(lua_State* L) {
 
 static int
 lnew_tls(lua_State* L) {
-    struct tls_context* tls_p = (struct tls_context*)lua_newuserdata(L, sizeof(*tls_p));
+    struct tls_context* tls_p = (struct tls_context*)lua_newuserdatauv(L, sizeof(*tls_p), 1);
     tls_p->is_close = false;
     const char* method = luaL_optstring(L, 1, "nil");
     struct ssl_ctx* ctx_p = _check_sslctx(L, 2);
     lua_pushvalue(L, 2);
-    lua_setuservalue(L, -2); // set ssl_ctx associated to tls_context
+    lua_setiuservalue(L, -2, 1); // set ssl_ctx associated to tls_context
 
     if(strcmp(method, "client") == 0) {
         _init_client_context(L, tls_p, ctx_p);
